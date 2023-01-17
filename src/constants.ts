@@ -1,5 +1,5 @@
 import cssVariables from "./css/variables.module.scss";
-import { AppProps } from "./types";
+import { AppProps, NormalizedZoomValue } from "./types";
 import { FontFamilyValues } from "./element/types";
 
 export const APP_NAME = "Excalidraw";
@@ -84,6 +84,9 @@ export const DEFAULT_FONT_FAMILY: FontFamilyValues = FONT_FAMILY.Virgil;
 export const DEFAULT_TEXT_ALIGN = "left";
 export const DEFAULT_VERTICAL_ALIGN = "top";
 export const DEFAULT_VERSION = "{version}";
+export const DEFAULT_BACKGROUND_COLOR = "#ffffff";
+export const DEFAULT_STROKE_COLOR = "#000000";
+export const DEFAULT_ZOOM_VALUE = 1 as NormalizedZoomValue;
 
 export const CANVAS_ONLY_ACTIONS = ["selectAll"];
 

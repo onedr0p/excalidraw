@@ -1,13 +1,15 @@
-import oc from "open-color";
 import {
+  DEFAULT_BACKGROUND_COLOR,
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
+  DEFAULT_STROKE_COLOR,
   DEFAULT_TEXT_ALIGN,
+  DEFAULT_ZOOM_VALUE,
   EXPORT_SCALES,
   THEME,
 } from "./constants";
 import { t } from "./i18n";
-import { AppState, NormalizedZoomValue } from "./types";
+import { AppState } from "./types";
 import { getDateTime } from "./utils";
 
 const defaultExportScale = EXPORT_SCALES.includes(devicePixelRatio)
@@ -31,7 +33,7 @@ export const getDefaultAppState = (): Omit<
     currentItemOpacity: 100,
     currentItemRoughness: 1,
     currentItemStartArrowhead: null,
-    currentItemStrokeColor: oc.black,
+    currentItemStrokeColor: DEFAULT_STROKE_COLOR,
     currentItemRoundness: "round",
     currentItemStrokeStyle: "solid",
     currentItemStrokeWidth: 1,
@@ -83,10 +85,10 @@ export const getDefaultAppState = (): Omit<
     startBoundElement: null,
     suggestedBindings: [],
     toast: null,
-    viewBackgroundColor: oc.white,
+    viewBackgroundColor: DEFAULT_BACKGROUND_COLOR,
     zenModeEnabled: false,
     zoom: {
-      value: 1 as NormalizedZoomValue,
+      value: DEFAULT_ZOOM_VALUE,
     },
     viewModeEnabled: false,
     pendingImageElementId: null,
