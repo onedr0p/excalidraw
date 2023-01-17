@@ -2,15 +2,23 @@ import { ExcalidrawTextElement } from "../element/types";
 import { AppClassProperties, AppState } from "../types";
 
 export type RenderConfig = {
-  // AppState values
+  // canvas related (AppState)
   // ---------------------------------------------------------------------------
   scrollX: AppState["scrollX"];
   scrollY: AppState["scrollY"];
   /** null indicates transparent bg */
-  viewBackgroundColor: AppState["viewBackgroundColor"] | null;
+  canvasBackgroundColor: AppState["viewBackgroundColor"] | null;
   zoom: AppState["zoom"];
   shouldCacheIgnoreZoom: AppState["shouldCacheIgnoreZoom"];
   theme: AppState["theme"];
+  /**
+   * canvas scale factor. Not related to zoom. In browsers, it's the
+   * devicePixelRatio. For export, it's the `appState.exportScale`
+   * (user setting) or whatever scale you want to use when exporting elsewhere.
+   *
+   * Bigger the scale, the more pixels (=quality).
+   */
+  canvasScale: number;
   // collab-related state
   // ---------------------------------------------------------------------------
   remotePointerViewportCoords: { [id: string]: { x: number; y: number } };

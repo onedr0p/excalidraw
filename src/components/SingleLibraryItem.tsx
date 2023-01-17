@@ -31,13 +31,15 @@ const SingleLibraryItem = ({
     }
     (async () => {
       const svg = await exportToSvg({
-        elements: libItem.elements,
-        appState: {
-          ...appState,
-          viewBackgroundColor: oc.white,
-          exportBackground: true,
+        data: {
+          elements: libItem.elements,
+          appState: {
+            ...appState,
+            viewBackgroundColor: oc.white,
+            exportBackground: true,
+          },
+          files: null,
         },
-        files: null,
       });
       node.innerHTML = svg.outerHTML;
     })();

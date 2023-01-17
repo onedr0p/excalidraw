@@ -1340,14 +1340,14 @@ class App extends React.Component<AppProps, AppState> {
       {
         elements: renderingElements,
         appState: this.state,
-        scale: window.devicePixelRatio,
         rc: this.rc!,
         canvas: this.canvas!,
         renderConfig: {
+          canvasScale: window.devicePixelRatio,
           selectionColor,
           scrollX: this.state.scrollX,
           scrollY: this.state.scrollY,
-          viewBackgroundColor: this.state.viewBackgroundColor,
+          canvasBackgroundColor: this.state.viewBackgroundColor,
           zoom: this.state.zoom,
           remotePointerViewportCoords: pointerViewportCoords,
           remotePointerButton: cursorButton,

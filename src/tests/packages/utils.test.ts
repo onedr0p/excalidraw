@@ -3,6 +3,7 @@ import { diagramFactory } from "../fixtures/diagramFixture";
 import * as mockedSceneExportUtils from "../../scene/export";
 import { MIME_TYPES } from "../../constants";
 
+import { exportToCanvas } from "../../scene/export";
 jest.mock("../../scene/export", () => ({
   __esmodule: true,
   ...jest.requireActual("../../scene/export"),
@@ -13,8 +14,8 @@ describe("exportToCanvas", () => {
   const EXPORT_PADDING = 10;
 
   it("with default arguments", async () => {
-    const canvas = await utils.exportToCanvas({
-      ...diagramFactory({ elementOverrides: { width: 100, height: 100 } }),
+    const canvas = await exportToCanvas({
+      data: diagramFactory({ elementOverrides: { width: 100, height: 100 } }),
     });
 
     expect(canvas.width).toBe(100 + 2 * EXPORT_PADDING);
@@ -22,9 +23,13 @@ describe("exportToCanvas", () => {
   });
 
   it("when custom width and height", async () => {
-    const canvas = await utils.exportToCanvas({
-      ...diagramFactory({ elementOverrides: { width: 100, height: 100 } }),
-      getDimensions: () => ({ width: 200, height: 200, scale: 1 }),
+    const canvas = await exportToCanvas({
+      data: {
+        ...diagramFactory({ elementOverrides: { width: 100, height: 100 } }),
+      },
+      config: {
+        getDimensions: () => ({ width: 200, height: 200, scale: 1 }),
+      },
     });
 
     expect(canvas.width).toBe(200);
@@ -38,12 +43,17 @@ describe("exportToBlob", () => {
 
     it("should change image/jpg to image/jpeg", async () => {
       const blob = await utils.exportToBlob({
-        ...diagramFactory(),
-        getDimensions: (width, height) => ({ width, height, scale: 1 }),
-        // testing typo in MIME type (jpg → jpeg)
-        mimeType: "image/jpg",
-        appState: {
-          exportBackground: true,
+        data: {
+          ...diagramFactory(),
+
+          appState: {
+            exportBackground: true,
+          },
+        },
+        config: {
+          getDimensions: (width, height) => ({ width, height, scale: 1 }),
+          // testing typo in MIME type (jpg → jpeg)
+          mimeType: "image/jpg",
         },
       });
       expect(blob?.type).toBe(MIME_TYPES.jpg);
@@ -51,7 +61,7 @@ describe("exportToBlob", () => {
 
     it("should default to image/png", async () => {
       const blob = await utils.exportToBlob({
-        ...diagramFactory(),
+        data: diagramFactory(),
       });
       expect(blob?.type).toBe(MIME_TYPES.png);
     });
@@ -62,9 +72,11 @@ describe("exportToBlob", () => {
         .mockImplementationOnce(() => void 0);
 
       await utils.exportToBlob({
-        ...diagramFactory(),
-        mimeType: MIME_TYPES.png,
-        quality: 1,
+        data: diagramFactory(),
+        config: {
+          mimeType: MIME_TYPES.png,
+          quality: 1,
+        },
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -82,7 +94,7 @@ describe("exportToSvg", () => {
 
   it("with default arguments", async () => {
     await utils.exportToSvg({
-      ...diagramFactory({
+      data: diagramFactory({
         overrides: { appState: void 0 },
       }),
     });
@@ -98,7 +110,7 @@ describe("exportToSvg", () => {
 
   it("with deleted elements", async () => {
     await utils.exportToSvg({
-      ...diagramFactory({
+      data: diagramFactory({
         overrides: { appState: void 0 },
         elementOverrides: { isDeleted: true },
       }),
@@ -109,8 +121,10 @@ describe("exportToSvg", () => {
 
   it("with exportPadding", async () => {
     await utils.exportToSvg({
-      ...diagramFactory({ overrides: { appState: { name: "diagram name" } } }),
-      exportPadding: 0,
+      data: diagramFactory({
+        overrides: { appState: { name: "diagram name" } },
+      }),
+      config: { padding: 0 },
     });
 
     expect(passedElements().length).toBe(3);
@@ -121,7 +135,7 @@ describe("exportToSvg", () => {
 
   it("with exportEmbedScene", async () => {
     await utils.exportToSvg({
-      ...diagramFactory({
+      data: diagramFactory({
         overrides: {
           appState: { name: "diagram name", exportEmbedScene: true },
         },

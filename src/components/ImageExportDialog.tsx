@@ -99,10 +99,18 @@ const ImageExportModal = ({
     if (!previewNode) {
       return;
     }
-    exportToCanvas(exportedElements, appState, files, {
-      exportBackground,
-      viewBackgroundColor,
-      exportPadding,
+    exportToCanvas({
+      data: {
+        elements: exportedElements,
+        appState,
+        files,
+      },
+      config: {
+        canvasBackgroundColor: !exportBackground ? false : viewBackgroundColor,
+        padding: exportPadding,
+        theme: appState.exportWithDarkMode ? "dark" : "light",
+        scale: appState.exportScale,
+      },
     })
       .then((canvas) => {
         setRenderError(null);

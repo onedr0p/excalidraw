@@ -317,14 +317,12 @@ const renderLinearElementPointHighlight = (
 export const _renderScene = ({
   elements,
   appState,
-  scale,
   rc,
   canvas,
   renderConfig,
 }: {
   elements: readonly NonDeletedExcalidrawElement[];
   appState: AppState;
-  scale: number;
   rc: RoughCanvas;
   canvas: HTMLCanvasElement;
   renderConfig: RenderConfig;
@@ -347,27 +345,27 @@ export const _renderScene = ({
 
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.save();
-    context.scale(scale, scale);
+    context.scale(renderConfig.canvasScale, renderConfig.canvasScale);
     // When doing calculations based on canvas width we should used normalized one
-    const normalizedCanvasWidth = canvas.width / scale;
-    const normalizedCanvasHeight = canvas.height / scale;
+    const normalizedCanvasWidth = canvas.width / renderConfig.canvasScale;
+    const normalizedCanvasHeight = canvas.height / renderConfig.canvasScale;
 
     if (isExporting && renderConfig.theme === "dark") {
       context.filter = THEME_FILTER;
     }
 
     // Paint background
-    if (typeof renderConfig.viewBackgroundColor === "string") {
+    if (typeof renderConfig.canvasBackgroundColor === "string") {
       const hasTransparence =
-        renderConfig.viewBackgroundColor === "transparent" ||
-        renderConfig.viewBackgroundColor.length === 5 || // #RGBA
-        renderConfig.viewBackgroundColor.length === 9 || // #RRGGBBA
-        /(hsla|rgba)\(/.test(renderConfig.viewBackgroundColor);
+        renderConfig.canvasBackgroundColor === "transparent" ||
+        renderConfig.canvasBackgroundColor.length === 5 || // #RGBA
+        renderConfig.canvasBackgroundColor.length === 9 || // #RRGGBBA
+        /(hsla|rgba)\(/.test(renderConfig.canvasBackgroundColor);
       if (hasTransparence) {
         context.clearRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
       }
       context.save();
-      context.fillStyle = renderConfig.viewBackgroundColor;
+      context.fillStyle = renderConfig.canvasBackgroundColor;
       context.fillRect(0, 0, normalizedCanvasWidth, normalizedCanvasHeight);
       context.restore();
     } else {
@@ -796,7 +794,6 @@ const renderSceneThrottled = throttleRAF(
   (config: {
     elements: readonly NonDeletedExcalidrawElement[];
     appState: AppState;
-    scale: number;
     rc: RoughCanvas;
     canvas: HTMLCanvasElement;
     renderConfig: RenderConfig;
@@ -813,7 +810,6 @@ export const renderScene = <T extends boolean = false>(
   config: {
     elements: readonly NonDeletedExcalidrawElement[];
     appState: AppState;
-    scale: number;
     rc: RoughCanvas;
     canvas: HTMLCanvasElement;
     renderConfig: RenderConfig;

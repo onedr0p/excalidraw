@@ -2,7 +2,7 @@ import clsx from "clsx";
 import React from "react";
 import { ActionManager } from "../actions/manager";
 import { CLASSES, LIBRARY_SIDEBAR_WIDTH } from "../constants";
-import { exportCanvas } from "../data";
+import { exportAsImage } from "../data";
 import { isTextElement, showSelectedShapeActions } from "../element";
 import { NonDeletedExcalidrawElement } from "../element/types";
 import { Language, t } from "../i18n";
@@ -152,7 +152,7 @@ const LayerUI = ({
       (type: ExportType): ExportCB =>
       async (exportedElements) => {
         trackEvent("export", type, "ui");
-        const fileHandle = await exportCanvas(
+        const fileHandle = await exportAsImage(
           type,
           exportedElements,
           appState,

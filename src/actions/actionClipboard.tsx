@@ -8,7 +8,7 @@ import {
 } from "../clipboard";
 import { actionDeleteSelected } from "./actionDeleteSelected";
 import { getSelectedElements } from "../scene/selection";
-import { exportCanvas } from "../data/index";
+import { exportAsImage } from "../data/index";
 import { getNonDeletedElements, isTextElement } from "../element";
 import { t } from "../i18n";
 
@@ -78,7 +78,7 @@ export const actionCopyAsSvg = register({
       true,
     );
     try {
-      await exportCanvas(
+      await exportAsImage(
         "clipboard-svg",
         selectedElements.length
           ? selectedElements
@@ -122,7 +122,7 @@ export const actionCopyAsPng = register({
       true,
     );
     try {
-      await exportCanvas(
+      await exportAsImage(
         "clipboard",
         selectedElements.length
           ? selectedElements
