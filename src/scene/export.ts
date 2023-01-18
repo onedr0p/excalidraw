@@ -49,37 +49,45 @@ export type ExportToCanvasConfig = {
   padding?: number;
   // -------------------------------------------------------------------------
   /**
-   * Makes sure the canvas is no larger than this value, while keeping the
-   * aspect ratio.
+   * Makes sure the canvas content fits into a frame of width/height no larger
+   * than this value, while maintaining the aspect ratio.
    *
-   * Technically can get smaller/larger if used in conjunction with
+   * Final dimensions can get smaller/larger if used in conjunction with
    * `scale`.
    */
   maxWidthOrHeight?: number;
   // -------------------------------------------------------------------------
   /**
-   * Width of the frame. Supply `x` or `y` if you want to ofsset the canvas.
+   * Width of the frame. Supply `x` or `y` if you want to ofsset the canvas
+   * content.
    *
-   * Defaults to the content bounding box width.
+   * If `width` omitted but `height` supplied, `width` is calculated from the
+   * the content's bounding box to preserve the aspect ratio.
+   *
+   * Defaults to the content bounding box width when both `width` and `height`
+   * are omitted.
    */
   width?: number;
   /**
    * Height of the frame.
    *
-   * If height omitted, the height is calculated from the the content's
-   * bounding box to preserve the aspect ratio.
+   * If `height` omitted but `width` supplied, `height` is calculated from the
+   * content's bounding box to preserve the aspect ratio.
    *
-   * Defaults to the content bounding box height.
+   * Defaults to the content bounding box height when both `width` and `height`
+   * are omitted.
    */
   height?: number;
   /**
-   * Left canvas position. Defaults to the `x` postion of the content bounding
-   * box.
+   * Left canvas offset. By default the coordinate is relative to the canvas.
+   * You can switch to content coordinates by setting `origin` to `content`.
    *
+   * Defaults to the `x` postion of the content bounding box.
    */
   x?: number;
   /**
-   * Top canvas position.
+   * Top canvas offset. By default the coordinate is relative to the canvas.
+   * You can switch to content coordinates by setting `origin` to `content`.
    *
    * Defaults to the `y` postion of the content bounding box.
    */
@@ -94,7 +102,9 @@ export type ExportToCanvasConfig = {
    */
   origin?: "canvas" | "content";
   /**
-   * If dimensions specified, this indicates how the canvas should be scaled.
+   * If dimensions specified and `x` and `y` are not specified, this indicates
+   * how the canvas should be scaled.
+   *
    * Behavior aligns with the `object-fit` CSS property.
    *
    * - `none`    - no scaling.
@@ -107,41 +117,42 @@ export type ExportToCanvasConfig = {
    */
   fit?: "none" | "contain" | "cover";
   /**
-   * If `fit` is set to `none` or `cover`, and neither `x` or `y` are
-   * specified, indicates how the canvas should be aligned.
+   * When either `x` or `y` are not specified, indicates how the canvas should
+   * be aligned on the respective axis.
    *
    * - `none`   - canvas aligned to top left.
-   * - `center` - canvas is centered. Aligned to either axis (or both) that's
-   *              not specified.
+   * - `center` - canvas is centered on the axis which is not specified
+   *              (or both).
    *
    * @default "center"
    */
   position?: "center" | "none";
   // -------------------------------------------------------------------------
   /**
-   * A multiplier to increase/decrease the canvas resolution.
+   * A multiplier to increase/decrease the frame dimensions
+   * (content resolution).
    *
    * For example, if your canvas is 300x150 and you set scale to 2, the
-   * resoluting size will be 600x300.
+   * resulting size will be 600x300.
    *
    * @default 1
    */
   scale?: number;
   /**
-   * If you need to suply your own canvas, e.g. in test environments or on
+   * If you need to suply your own canvas, e.g. in test environments or in
    * Node.js.
    *
-   * Do not set canvas.width/height or modify the context as that's handled
-   * by Excalidraw.
+   * Do not set `canvas.width/height` or modify the canvas context as that's
+   * handled by Excalidraw.
    *
    * Defaults to `document.createElement("canvas")`.
    */
   createCanvas?: () => HTMLCanvasElement;
   /**
-   * If you want to supply width/height dynamically (or derive from the
+   * If you want to supply `width`/`height` dynamically (or derive from the
    * content bounding box), you can use this function.
    *
-   * Ignored if `maxWidthOrHeight` or `width` is set.
+   * Ignored if `maxWidthOrHeight`, `width`, or `height` is set.
    */
   getDimensions?: (
     width: number,
@@ -171,7 +182,7 @@ export const exportToCanvas = async ({
 
   if (cfg.x != null || cfg.x != null) {
     if (cfg.fit != null && cfg.fit !== "none") {
-      if (process.env.NODE_ENV === ENV.DEVELOPMENT) {
+      if (process.env.NODE_ENV !== ENV.PRODUCTION) {
         console.warn(
           "`fit` will be ignored (automatically set to `none`) when you specify `x` or `y` offsets",
         );
@@ -183,7 +194,7 @@ export const exportToCanvas = async ({
   cfg.fit = cfg.fit ?? "contain";
 
   if (cfg.fit === "cover" && cfg.padding) {
-    if (process.env.NODE_ENV === ENV.DEVELOPMENT) {
+    if (process.env.NODE_ENV !== ENV.PRODUCTION) {
       console.warn("`padding` is ignored when `fit` is set to `cover`");
     }
     cfg.padding = 0;
@@ -194,16 +205,37 @@ export const exportToCanvas = async ({
   cfg.origin = cfg.origin ?? "canvas";
   cfg.position = cfg.position ?? "center";
   cfg.padding = cfg.padding ?? DEFAULT_EXPORT_PADDING;
+
+  if (
+    (cfg.maxWidthOrHeight != null || cfg.width != null || cfg.height != null) &&
+    cfg.getDimensions
+  ) {
+    if (process.env.NODE_ENV !== ENV.PRODUCTION) {
+      console.warn(
+        "`getDimensions` is ignored when `width`, `height`, or `maxWidthOrHeight` is set",
+      );
+    }
+    cfg.getDimensions = undefined;
+  }
   // ---------------------------------------------------------------------------
 
+  // value used to scale the canvas context. By default, we use this to
+  // make the canvas fit into the frame (e.g. for `cfg.fit` set to `contain`).
+  // If `cfg.scale` is set, we multiply the resulting canvasScale by it to
+  // scale the output further.
   let canvasScale = 1;
 
-  const canvasSize = getCanvasSize(elements, cfg.padding);
-  const [contentX, contentY, contentWidth, contentHeight] = canvasSize;
-  let [x, y, width, height] = canvasSize;
+  const origCanvasSize = getCanvasSize(elements, cfg.padding);
+
+  // variables for original content bounding box
+  const [origX, origY, origWidth, origHeight] = origCanvasSize;
+  // variables for target bounding box
+  let [x, y, width, height] = origCanvasSize;
 
   if (cfg.maxWidthOrHeight != null) {
-    canvasScale = cfg.maxWidthOrHeight / Math.max(contentWidth, contentHeight);
+    // calculate by how much do we need to scale the canvas to fit into the
+    // target dimension (e.g. target: max 50px, actual: 70x100px => scale: 0.5)
+    canvasScale = cfg.maxWidthOrHeight / Math.max(origWidth, origHeight);
 
     width *= canvasScale;
     height *= canvasScale;
@@ -213,11 +245,15 @@ export const exportToCanvas = async ({
     if (cfg.height) {
       height = cfg.height;
     } else {
-      height *= width / contentWidth;
+      // if height not specified, scale the original height to match the new
+      // width while maintaining aspect ratio
+      height *= width / origWidth;
     }
   } else if (cfg.height != null) {
     height = cfg.height;
-    width *= height / contentHeight;
+    // width not specified, so scale the original width to match the new
+    // height while maintaining aspect ratio
+    width *= height / origHeight;
   } else if (cfg.getDimensions) {
     const ret = cfg.getDimensions(width, height);
 
@@ -227,38 +263,41 @@ export const exportToCanvas = async ({
   }
 
   if (cfg.fit === "contain" && !cfg.maxWidthOrHeight) {
-    const oRatio = contentWidth / contentHeight;
-    const cRatio = width / height;
-
-    if (oRatio > cRatio) {
-      canvasScale = width / contentWidth;
-    } else {
-      canvasScale = height / contentHeight;
-    }
+    const wRatio = width / origWidth;
+    const hRatio = height / origHeight;
+    // scale the orig canvas to fit in the target frame
+    canvasScale = Math.min(wRatio, hRatio);
   } else if (cfg.fit === "cover") {
-    const wRatio = width / contentWidth;
-    const hRatio = height / contentHeight;
-    canvasScale = wRatio > hRatio ? wRatio : hRatio;
+    const wRatio = width / origWidth;
+    const hRatio = height / origHeight;
+    // scale the orig canvas to fill the the target frame
+    // (opposite of "contain")
+    canvasScale = Math.max(wRatio, hRatio);
   }
 
+  x = cfg.x ?? origX;
+  y = cfg.y ?? origY;
+
+  // if we switch to "content" coords, we need to offset cfg-supplied
+  // coords by the x/y of content bounding box
   if (cfg.origin === "content") {
     if (cfg.x != null) {
-      cfg.x = cfg.x + contentX;
+      x += origX;
     }
     if (cfg.y != null) {
-      cfg.y = cfg.y + contentY;
+      y += origY;
     }
   }
 
-  x = cfg.x ?? contentX;
-  y = cfg.y ?? contentY;
-
+  // Centering the content to the frame.
+  // We divide width/height by canvasScale so that we calculate in the original
+  // aspect ratio dimensions.
   if (cfg.position === "center") {
     if (cfg.x == null) {
-      x -= width / canvasScale / 2 - contentWidth / 2;
+      x -= width / canvasScale / 2 - origWidth / 2;
     }
     if (cfg.y == null) {
-      y -= height / canvasScale / 2 - contentHeight / 2;
+      y -= height / canvasScale / 2 - origHeight / 2;
     }
   }
 
@@ -266,6 +305,8 @@ export const exportToCanvas = async ({
     ? cfg.createCanvas()
     : document.createElement("canvas");
 
+  // scale the whole frame by cfg.scale (on top of whatever canvasScale we
+  // calculated above)
   canvasScale *= cfg.scale;
   width *= cfg.scale;
   height *= cfg.scale;
